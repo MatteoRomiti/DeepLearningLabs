@@ -30,7 +30,7 @@ class NeuralNetwork(object):
         self.a_input = np.zeros(self.input)
         self.a_hidden = np.zeros(self.hidden)
         self.a_output = np.zeros(self.output)
-        
+        self.o_output = np.zeros(self.output)
         
         #create randomized weights Yann Lecun method in 1988's paper ( Default values)
         input_range = 1.0 / self.input ** (1/2)
@@ -48,51 +48,40 @@ class NeuralNetwork(object):
     #========================Begin implementation section 1============================================="    
     
     def feedForward(self, inputs):
-        
-        # Compute input activations
         if len(inputs) < self.input:
             inputs.append(1)
         self.a_input = np.asarray(inputs)
-        # Compute  hidden activations
-        self.a_hidden = np.dot(self.W_input_to_hidden.transpose(),self.a_input)
-        # Compute output activations
+
+        self.a_input = np.matrix(self.a_input).T
+        self.a_hidden = np.matrix(self.a_hidden).T
+        self.W_input_to_hidden = np.matrix(self.W_input_to_hidden)
+        self.W_hidden_to_output = np.matrix(self.W_hidden_to_output)
+        
+        self.a_hidden = self.W_input_to_hidden.T * self.a_input
         if self.a_hidden.shape[0] < self.hidden:
-            self.a_hidden = np.append(self.a_hidden, 1)
-        self.a_output = np.dot(self.W_hidden_to_output.transpose(),sigmoid(self.a_hidden))
-        #       for i in range(self.output): # i index for neuron in output layer
-#               for j in range(self.hidden): # j index for neuron in hidden layer
-#                   self.a_output[i] = + self.W_hidden_to_output[j,i]*sigmoid(self.a_hidden[j])
-#        out = self.a_output
-#        for i in range(self.output):
-#                out[i] = sigmoid(self.a_output[i])
-#        return out
- 
+            self.a_hidden = np.concatenate((self.a_hidden,np.matrix([1])),axis=0)
+        self.a_output = self.W_hidden_to_output.T * sigmoid(self.a_hidden)
+        self.o_output = sigmoid(self.a_output)
+        
+        
+        
 
-       
-     #========================End implementation section 1==============================================="   
-        
-        
-        
-        
-     #========================Begin implementation section 2=============================================#    
+    def backPropagate(self, targets):
 
-    #def backPropagate(self, targets):
-        
-        
-         # calculate error terms for output
-       
+        # calculate error terms for output
+        dEdu2 = (self.o_output - targets)*(self.o_output * (1 - self.o_output))
+
         # calculate error terms for hidden
-        
+        o_hidden = sigmoid(self.a_hidden)
+        m1 = self.W_hidden_to_output*dEdu2
+        m2 = np.multiply(o_hidden, 1-o_hidden)
+        dEdu1 = np.multiply(m1,m2)
+        dEdu1 = np.delete(dEdu1, self.input -1)
         # update output weights
-      
+        self.W_hidden_to_output -= self.learning_rate * np.multiply(dEdu2, o_hidden) 
         # update input weights
-        
-        # calculate error
-        
-        
-     #========================End implementation section 2 =================================================="   
-
-    
+        self.W_input_to_hidden -= self.learning_rate * (self.a_input * dEdu1)
+  
     
     
     def train(self, data,validation_data):
