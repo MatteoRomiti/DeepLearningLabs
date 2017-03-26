@@ -1,3 +1,4 @@
+
 import time
 import random
 import numpy as np
@@ -31,7 +32,9 @@ class NeuralNetwork(object):
         self.a_hidden = np.zeros(self.hidden)
         self.a_output = np.zeros(self.output)
         self.o_output = np.zeros(self.output)
-        
+        self.o_hidden = np.zeros(self.hidden)
+
+
         #create randomized weights Yann Lecun method in 1988's paper ( Default values)
         input_range = 1.0 / self.input ** (1/2)
         self.W_input_to_hidden = np.random.normal(loc = 0, scale = input_range, size =(self.input, self.hidden-1))
@@ -49,7 +52,7 @@ class NeuralNetwork(object):
     
     def feedForward(self, inputs):
         if len(inputs) < self.input:
-            inputs.append(1)
+            inputs = np.append(inputs, 1)
         self.a_input = np.asarray(inputs)
 
         self.a_input = np.matrix(self.a_input).T
@@ -58,9 +61,10 @@ class NeuralNetwork(object):
         self.W_hidden_to_output = np.matrix(self.W_hidden_to_output)
         
         self.a_hidden = self.W_input_to_hidden.T * self.a_input
-        if self.a_hidden.shape[0] < self.hidden:
-            self.a_hidden = np.concatenate((self.a_hidden,np.matrix([1])),axis=0)
-        self.a_output = self.W_hidden_to_output.T * sigmoid(self.a_hidden)
+        #if self.a_hidden.shape[0] < self.hidden:
+        #    self.a_hidden = np.concatenate((self.a_hidden,np.matrix([1])),axis=0)
+        self.o_hidden = np.concatenate((sigmoid(self.a_hidden), np.matrix([1])), axis=0)
+        self.a_output = self.W_hidden_to_output.T * self.o_hidden
         self.o_output = sigmoid(self.a_output)
         
         
@@ -69,18 +73,21 @@ class NeuralNetwork(object):
     def backPropagate(self, targets):
 
         # calculate error terms for output
-        dEdu2 = (self.o_output - targets)*(self.o_output * (1 - self.o_output))
-
+        dEdu2 = np.multiply(self.o_output - targets, np.multiply(self.o_output, 1 - self.o_output))
+        print((1-self.o_output).shape, np.multiply(self.o_output, (1 - self.o_output)).shape, dEdu2.shape)
         # calculate error terms for hidden
-        o_hidden = sigmoid(self.a_hidden)
-        m1 = self.W_hidden_to_output*dEdu2
-        m2 = np.multiply(o_hidden, 1-o_hidden)
-        dEdu1 = np.multiply(m1,m2)
-        dEdu1 = np.delete(dEdu1, self.input -1)
+        #o_hidden = sigmoid(self.a_hidden)
+        dEdu1 = np.multiply(dEdu2*self.W_hidden_to_output.T, np.multiply(self.o_hidden, 1-self.o_hidden).T)
+
+        dEdu1 = np.delete(dEdu1, -1, axis=1)
+        print(dEdu1.shape)
+
         # update output weights
-        self.W_hidden_to_output -= self.learning_rate * np.multiply(dEdu2, o_hidden) 
+        #self.W_hidden_to_output -= self.learning_rate * np.multiply(dEdu2, o_hidden) 
+        #print((dEdu2.T * self.o_hidden).T.shape)
+        self.W_hidden_to_output -= self.learning_rate * (dEdu2.T * self.o_hidden.T).T
         # update input weights
-        self.W_input_to_hidden -= self.learning_rate * (self.a_input * dEdu1)
+        self.W_input_to_hidden -= self.learning_rate * (dEdu1.T * self.a_input.T).T
   
     
     
