@@ -8,15 +8,7 @@ from transfer_functions import *
 
 class NeuralNetwork(object):
     
-    def __init__(self, input_layer_size, hidden_layer_size, output_layer_size, iterations=50, learning_rate = 0.1):
-        """
-        input: number of input neurons
-        hidden: number of hidden neurons
-        output: number of output neurons
-        iterations: how many iterations
-        learning_rate: initial learning rate
-        """
-       
+    def __init__(self, input_layer_size, hidden1_layer_size, hidden2_layer_size, output_layer_size, iterations=50, learning_rate = 0.1):
         # initialize parameters
         self.iterations = iterations   #iterations
         self.learning_rate = learning_rate
@@ -24,12 +16,14 @@ class NeuralNetwork(object):
         
         # initialize arrays
         self.input = input_layer_size+1  # +1 for the bias node in the input Layer
-        self.hidden = hidden_layer_size+1 # +1 for the bias node in the hidden layer 
+        self.hidden1 = hidden1_layer_size+1 # +1 for the bias node in the hidden layer
+        self.hidden2 = hidden2_layer_size+1 # +1 for the bias node in the hidden layer 
         self.output = output_layer_size
 
         # set up array of 1s for activations
         self.a_input = np.ones(self.input)
-        self.a_hidden = np.ones(self.hidden)
+        self.a_hidden1 = np.ones(self.hidden1)
+        self.a_hidden2 = np.ones(self.hidden2)
         self.a_output = np.ones(self.output)
         self.o_output = np.ones(self.output)
 
@@ -39,13 +33,15 @@ class NeuralNetwork(object):
 
         #create randomized weights Yann Lecun method in 1988's paper ( Default values)
         input_range = 1.0 / self.input ** (1/2)
-        self.W_input_to_hidden = np.random.normal(loc = 0, scale = input_range, size =(self.input, self.hidden-1))
-        self.W_hidden_to_output = np.random.uniform(size = (self.hidden, self.output)) / np.sqrt(self.hidden)
+        self.W_input_to_hidden1 = np.random.normal(loc = 0, scale = input_range, size =(self.input, self.hidden1-1))
+        self.W_hidden1_to_hidden2 = np.random.uniform(size = (self.hidden1, self.hidden2-1)) / np.sqrt(self.hidden1)
+        self.W_hidden2_to_output = np.random.uniform(size = (self.hidden2, self.output)) / np.sqrt(self.hidden2)
        
         
-    def weights_initialisation(self,wi,wo):
-        self.W_input_to_hidden=wi # weights between input and hidden layers
-        self.W_hidden_to_output=wo # weights between hidden and output layers
+    def weights_initialisation(self,wi,wh,wo):
+        self.W_input_to_hidden1=wi # weights between input and hidden layers
+        self.W_hidden1_to_hidden2=wh
+        self.W_hidden2_to_output=wo # weights between hidden and output layers
 
 
     def set_transfer_function(self, transferFunc, derivateTransferFunc):
@@ -60,10 +56,11 @@ class NeuralNetwork(object):
         self.a_input = np.append(inputs, [1])
 
         #we pass the inputs times the weights to the transfer function
-        self.a_hidden = np.append(self.transferFunc(self.a_input.dot(self.W_input_to_hidden)), [1])
+        self.a_hidden1 = np.append(self.transferFunc(self.a_input.dot(self.W_input_to_hidden1)), [1])
+        self.a_hidden2 = np.append(self.transferFunc(self.a_hidden1.dot(self.W_hidden1_to_hidden2)), [1])
 
         #compute what arrives at the output layer
-        self.a_output = self.a_hidden.dot(self.W_hidden_to_output)
+        self.a_output = self.a_hidden2.dot(self.W_hidden2_to_output)
 
         #pass this to the transfer function to get the output of the network
         self.o_output = self.transferFunc(self.a_output)
@@ -76,16 +73,19 @@ class NeuralNetwork(object):
         # calculate error terms for output
         self.outputErrors = self.o_output - targets
 
-        #calculate derivative of Error w.r.t. output layer
-        dEdu2 = np.multiply(self.outputErrors, self.derivateTransferFunc(self.o_output))
-        #calculate derivative of Error w.r.t. hidden layer
-        dEdu1 = np.multiply(self.W_hidden_to_output.dot(dEdu2), self.derivateTransferFunc(self.a_hidden))
+        #calculate derivative of Error
+        dEdu3 = np.multiply(self.outputErrors, self.derivateTransferFunc(self.o_output))
+
+        dEdu2 = np.multiply(self.W_hidden1_to_hidden2.dot(dEdu3), self.derivateTransferFunc(self.a_hidden2))
+        dEdu2 = np.delete(dEdu2, -1)
+
+        dEdu1 = np.multiply(self.W_input_to_hidden1.dot(dEdu2), self.derivateTransferFunc(self.a_hidden1))
         dEdu1 = np.delete(dEdu1, -1)
 
-        # update output weights
-        self.W_hidden_to_output -= self.learning_rate * np.outer(self.a_hidden, dEdu2)
-        # update input weights
-        self.W_input_to_hidden -= self.learning_rate * np.outer(self.a_input, dEdu1)
+        # update weights
+        self.W_hidden2_to_output -= self.learning_rate * np.outer(self.a_hidden2, dEdu3)
+        self.W_hidden1_to_hidden2 -= self.learning_rate * np.outer(self.a_hidden1, dEdu2)
+        self.W_input_to_hidden1 -= self.learning_rate * np.outer(self.a_input, dEdu1)
   
         return np.sum(self.outputErrors**2)/2
     
@@ -145,7 +145,7 @@ class NeuralNetwork(object):
     def save(self, filename):
         """ Save neural network (weights) to a file. """
         with open(filename, 'wb') as f:
-            pickle.dump({'wi':self.W_input_to_hidden, 'wo':self.W_hidden_to_output}, f )
+            pickle.dump({'wi':self.W_input_to_hidden1, 'wh':self.W_hidden1_to_hidden2 ,'wo':self.W_hidden2_to_output}, f )
         
         
     def load(self, filename):
@@ -153,8 +153,9 @@ class NeuralNetwork(object):
         with open(filename, 'rb') as f:
             data = pickle.load(f)
         # Set biases and weights
-        self.W_input_to_hidden=data['wi']
-        self.W_hidden_to_output = data['wo']
+        self.W_input_to_hidden1=data['wi']
+        self.W_hidden1_to_hidden2=data['wh']
+        self.W_hidden2_to_output = data['wo']
         
             
                                   

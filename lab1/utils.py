@@ -29,6 +29,7 @@ def load_data():
         
         
 def plot_curve(t,s,metric):
+    plt.figure(figsize=(20,7))
     plt.plot(t, s)
     plt.ylabel(metric) # or ERROR
     plt.xlabel('Epoch')
