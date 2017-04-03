@@ -76,10 +76,10 @@ class NeuralNetwork(object):
         #calculate derivative of Error
         dEdu3 = np.multiply(self.outputErrors, self.derivateTransferFunc(self.o_output))
 
-        dEdu2 = np.multiply(self.W_hidden1_to_hidden2.dot(dEdu3), self.derivateTransferFunc(self.a_hidden2))
+        dEdu2 = np.multiply(self.W_hidden2_to_output.dot(dEdu3), self.derivateTransferFunc(self.a_hidden2))
         dEdu2 = np.delete(dEdu2, -1)
 
-        dEdu1 = np.multiply(self.W_input_to_hidden1.dot(dEdu2), self.derivateTransferFunc(self.a_hidden1))
+        dEdu1 = np.multiply(self.W_hidden1_to_hidden2.dot(dEdu2), self.derivateTransferFunc(self.a_hidden1))
         dEdu1 = np.delete(dEdu1, -1)
 
         # update weights
@@ -94,7 +94,10 @@ class NeuralNetwork(object):
         start_time = time.time()
         errors=[]
         Training_accuracies=[]
+        Validation_accuracies=[]
       
+
+
         for it in range(self.iterations):
             np.random.shuffle(data)
             inputs  = [entry[0] for entry in data ]
@@ -107,7 +110,8 @@ class NeuralNetwork(object):
                 self.feedForward(Input)
                 error+=self.backPropagate(Target)
             Training_accuracies.append(self.predict(data))
-            
+            Validation_accuracies.append(self.predict(validation_data))
+
             error=error/len(data)
             errors.append(error)
             
@@ -125,7 +129,7 @@ class NeuralNetwork(object):
         #plot_curve(range(1,self.iterations+1), Training_accuracies, "Training_Accuracy")
 
         #returning these two arrays for plotting all together for better visualization
-        return (Training_accuracies, errors)
+        return (Training_accuracies, errors, Validation_accuracies)
         
      
 

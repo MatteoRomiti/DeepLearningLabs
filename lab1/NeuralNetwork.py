@@ -94,6 +94,7 @@ class NeuralNetwork(object):
         start_time = time.time()
         errors=[]
         Training_accuracies=[]
+        Validation_accuracies=[]
       
         for it in range(self.iterations):
             np.random.shuffle(data)
@@ -107,6 +108,7 @@ class NeuralNetwork(object):
                 self.feedForward(Input)
                 error+=self.backPropagate(Target)
             Training_accuracies.append(self.predict(data))
+            Validation_accuracies.append(self.predict(validation_data))
             
             error=error/len(data)
             errors.append(error)
@@ -125,7 +127,7 @@ class NeuralNetwork(object):
         #plot_curve(range(1,self.iterations+1), Training_accuracies, "Training_Accuracy")
 
         #returning these two arrays for plotting all together for better visualization
-        return (Training_accuracies, errors)
+        return (Training_accuracies, errors, Validation_accuracies)
         
      
 
