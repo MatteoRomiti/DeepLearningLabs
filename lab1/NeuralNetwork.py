@@ -4,6 +4,7 @@ import random
 import numpy as np
 from utils import *
 from transfer_functions import * 
+from pprint import pprint
 
 
 class NeuralNetwork(object):
@@ -142,6 +143,23 @@ class NeuralNetwork(object):
             count = count 
         return count 
     
+    def guessDigit(self, test_data):
+        """ Evaluate performance by counting how many examples in test_data are correctly 
+            evaluated. """
+        count = 0.0
+        for testcase in test_data:
+            answer = np.argmax( testcase[1] )
+            outputVector = self.feedForward(testcase[0])
+            prediction = np.argmax(outputVector)
+            np.set_printoptions(precision=3, suppress=True)
+            print(outputVector)
+            print("The model predicts:", prediction, " and the answer is:", answer)
+            print("----------------")
+            count = count + 1 if (answer - prediction) == 0 else count 
+            count = count 
+        return count 
+
+
     
     
     def save(self, filename):
