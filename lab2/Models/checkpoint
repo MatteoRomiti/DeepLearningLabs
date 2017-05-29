@@ -1,2 +1,2 @@
-model_checkpoint_path: "model_0.0001_128_SGD"
-all_model_checkpoint_paths: "model_0.0001_128_SGD"
+model_checkpoint_path: "model_0.001_50_Adam"
+all_model_checkpoint_paths: "model_0.001_50_Adam"
